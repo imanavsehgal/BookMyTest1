@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Aggregator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Medical Aggregator</h1>
+            <p>Compare diagnostic test prices across Rohtak, Mohali, and Chandigarh.</p>
+        </header>
+
+        <section class="search-box">
+            <form method="POST" action="/" id="searchForm">
+                <div class="form-group">
+                    <label for="test_name">Select Medical Test:</label>
+                    <select name="test_name" id="test_name">
+                        <option value="" disabled selected>-- Choose a Test --</option>
+                        {% for test in test_options %}
+                            <option value="{{ test }}" {% if selected_test == test %}selected{% endif %}>{{ test }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <input type="hidden" name="user_lat" id="user_lat">
+                <input type="hidden" name="user_lon" id="user_lon">
+
+                <div class="button-group" style="margin-top: 15px;">
+                    <button type="button" id="location-btn" class="btn-secondary" onclick="getLocation()">📍 Detect My Location</button>
+                    <button type="button" class="btn-primary" onclick="document.getElementById('searchForm').submit();">🔍 Compare Prices</button>
+                </div>
+                <small id="location-status"></small>
+            </form>
+        </section>
+
+        {% if results %}
+        <section class="results">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Results for: <span class="highlight">{{ selected_test }}</span></h2>
+                
+                <div style="background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; gap: 15px;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 3px;">Max Distance:</label>
+                        <select id="live-distance" onchange="applyLiveFilters()" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            <option value="9999">Show All</option>
+                            <option value="10">Within 10 km</option>
+                            <option value="20">Within 20 km</option>
+                            <option value="50">Within 50 km</option>
+                            <option value="100">Within 100 km</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 3px;">Instant Sort:</label>
+                        <select id="live-sort" onchange="applyLiveFilters()" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            <option value="distance">📍 Closest First</option>
+                            <option value="price">💰 Cheapest First</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hospital / Lab</th>
+                        <th>Address</th>
+                        <th>Price (₹)</th>
+                        <th>Distance</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    {% for r in results %}
+                    <tr class="hospital-row" data-price="{{ r.price }}" data-distance="{{ r.distance if r.distance != None else 9999 }}">
+                        <td>
+                            <strong>{{ r.name }}</strong><br>
+                            <span class="category-badge">{{ r.category }}</span>
+                        </td>
+                        <td>{{ r.address }}<br><small>📞 {{ r.phone }}</small></td>
+                        <td class="price">₹{{ r.price }}</td>
+                        <td>
+                            {% if r.distance != None %}
+                                {{ r.distance }} km
+                            {% else %}
+                                <i>Location off</i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/book?hospital={{ r.name }}&test={{ selected_test }}&price={{ r.price }}" class="btn-book" style="text-decoration: none; display: inline-block;">Book Slot</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+    </div>
+
+    <script>
+        function getLocation() {
+            const status = document.getElementById('location-status');
+            const btn = document.getElementById('location-btn');
+            if (navigator.geolocation) {
+                status.innerText = "Locating...";
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('user_lat').value = position.coords.latitude;
+                    document.getElementById('user_lon').value = position.coords.longitude;
+                    btn.innerText = "✅ Location Secured";
+                    btn.style.backgroundColor = "#e8f5e9";
+                    btn.style.color = "#2e7d32";
+                    status.innerText = "";
+                }, function() {
+                    status.innerText = "Location denied. Using default sorting.";
+                });
+            }
+        }
+
+        function applyLiveFilters() {
+            const maxDist = parseFloat(document.getElementById('live-distance').value);
+            const sortBy = document.getElementById('live-sort').value;
+            const tbody = document.getElementById('results-body');
+            if (!tbody) return;
+
+            const rows = Array.from(tbody.getElementsByClassName('hospital-row'));
+
+            rows.forEach(row => {
+                const dist = parseFloat(row.getAttribute('data-distance'));
+                row.style.display = dist <= maxDist ? '' : 'none';
+            });
+
+            rows.sort((a, b) => {
+                const valA = parseFloat(a.getAttribute(sortBy === 'price' ? 'data-price' : 'data-distance'));
+                const valB = parseFloat(b.getAttribute(sortBy === 'price' ? 'data-price' : 'data-distance'));
+                return valA - valB;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        window.onload = function() {
+            if (document.getElementById('results-body')) {
+                applyLiveFilters();
+            }
+        };
+    </script>
+</body>
+</html>

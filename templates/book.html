@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Booking - Medical Aggregator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .booking-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .info-badge {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3b82f6;
+        }
+        .info-badge p { margin: 5px 0; color: #475569; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .flex-group {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2563eb; }
+        #otpSection {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="booking-container">
+            <h2 style="text-align: center; color: #1e293b;">Patient Details</h2>
+            
+            <div class="info-badge">
+                <p><strong>Hospital:</strong> {{ hospital }}</p>
+                <p><strong>Test:</strong> {{ test }}</p>
+                <p><strong>Total Price:</strong> ₹{{ price }}</p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="appointment_date" style="display: block; margin-bottom: 8px; font-weight: bold; color: #1e293b;">
+                    📅 Choose Appointment Date:
+                </label>
+                <input type="date" id="appointment_date" name="appointment_date" required>
+            </div>
+
+            <form id="otpForm">
+                <input type="text" id="patient_name" placeholder="Full Name of Patient" required>
+                
+                <div class="flex-group">
+                    <input type="number" id="patient_age" placeholder="Age" style="flex: 1;" required>
+                    <select id="patient_gender" style="flex: 1;" required>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <input type="text" id="phone" placeholder="10-Digit Mobile Number" required>
+                
+                <button type="button" id="sendOtpBtn" onclick="sendOTP()">Send Verification OTP</button>
+
+                <div id="otpSection" style="display:none;">
+                    <p style="font-size: 14px; color: #64748b; text-align: center;">Enter the 4-digit code sent to your phone</p>
+                    <input type="text" id="otp_input" placeholder="Enter OTP Code">
+                    <button type="button" onclick="verifyAndBook()">Confirm & Book Appointment</button>
+                </div>
+            </form>
+            
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="/" style="color: #64748b; text-decoration: none; font-size: 14px;">← Back to Search</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+    // Set default date to today and prevent past dates
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('appointment_date');
+        if(dateInput) {
+            dateInput.value = today;
+            dateInput.setAttribute('min', today);
+        }
+    });
+
+    function sendOTP() {
+        console.log("Button clicked!");
+
+        // Helper to safely get values and avoid 'null' errors
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value : null;
+
+        const phone = getVal('phone');
+        const name = getVal('patient_name');
+        const age = getVal('patient_age');
+        const gender = getVal('patient_gender');
+        const selectedDate = getVal('appointment_date');
+        const btn = document.getElementById('sendOtpBtn');
+
+        if (!phone || !name || !selectedDate) {
+            alert("Please fill in Name, Phone, and Date!");
+            return;
+        }
+
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        // Sending data to Python backend
+        fetch('/send_real_otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `phone=${phone}&name=${encodeURIComponent(name)}&age=${age}&gender=${gender}&date=${selectedDate}&hospital=${encodeURIComponent("{{ hospital }}")}&test=${encodeURIComponent("{{ test }}")}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("Server Response:", data);
+            if (data.status === 'success') {
+                document.getElementById('otpSection').style.display = 'block';
+                btn.innerText = "OTP Sent ✅";
+            } else {
+                alert("Error: " + data.message);
+                btn.disabled = false;
+                btn.innerText = "Send Verification OTP";
+            }
+        })
+        .catch(err => {
+            console.error("Fetch Error:", err);
+            btn.disabled = false;
+            btn.innerText = "Send Verification OTP";
+        });
+    }
+
+    function verifyAndBook() {
+        const otp = document.getElementById('otp_input').value;
+        if (!otp) { alert("Please enter the OTP."); return; }
+
+        fetch('/verify_otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `otp=${otp}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'verified') {
+                window.location.href = '/confirmation';
+            } else {
+                alert("Invalid OTP! Please try again.");
+            }
+        });
+    }
+    </script>
+</body>
+</html>

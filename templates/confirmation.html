@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmed - Medical Aggregator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .success-card {
+            max-width: 550px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            border-top: 8px solid #22c55e;
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: #f0fdf4;
+            color: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 20px;
+        }
+        h1 { color: #1e293b; margin-bottom: 10px; font-size: 28px; }
+        p { color: #64748b; font-size: 18px; line-height: 1.6; }
+        .details-box {
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 25px 0;
+            text-align: left;
+            font-size: 15px;
+        }
+        .btn-home {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-home:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-card">
+            <div class="icon-circle">✓</div>
+            <h1>Booking Confirmed!</h1>
+            <p>Your request has been successfully sent to the hospital.</p>
+            
+            <div class="details-box">
+    <p><strong>Booking Date:</strong> <span id="display-date"></span></p>
+    <p><strong>Notice:</strong> The hospital administrator has received your details...</p>
+</div>
+
+<script>
+    // This small script automatically shows today's date
+    const d = new Date();
+    document.getElementById("display-date").innerHTML = d.toLocaleDateString('en-GB');
+</script>
+            <a href="/" class="btn-home">Back to Search</a>
+        </div>
+    </div>
+</body>
+</html>
