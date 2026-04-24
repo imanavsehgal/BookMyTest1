@@ -259,4 +259,4 @@ def confirmation():
 
 if __name__ == '__main__':
     # Remove init_db() if it's giving you errors
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
