@@ -7,11 +7,11 @@ import requests # Make sure to run 'pip install requests'
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "manav_super_secret_key" # <--- ADD THIS LINE (Line 10)
+app.secret_key = "manav_super_secret_key"
 DB_NAME = "hospital_data.db"
 
 # Global variable to store the last sent OTP for verification
-# (In a professional app, you'd use a database or session)
+
 last_sent_otp = None
 
 # --- 1. HAVERSINE DISTANCE FORMULA ---
